@@ -31,15 +31,14 @@ module Rack
       # Initialization should fail fast with an ArgumentError
       # if any args are invalid.
       def initialize(app, opts = {})
+        @logger  = opts[:logger] || ::Logger.new(STDOUT)
         @app     = app
         @secret  = opts.fetch(:secret, nil)
         @verify  = opts.fetch(:verify, true)
         @options = opts.fetch(:options, {})
-        @exclude = opts.fetch(:exclude, [])
-
+        @exclude = compile_excludes!(opts.fetch(:exclude, []))
         @secret  = @secret.strip if @secret.is_a?(String)
         @options[:algorithm] = DEFAULT_ALGORITHM if @options[:algorithm].nil?
-        @logger  = opts[:logger] || ::Logger.new(STDOUT)
 
         check_secret_type!
         check_secret!
@@ -47,7 +46,6 @@ module Rack
         check_verify_type!
         check_options_type!
         check_valid_algorithm!
-        check_exclude_type!
       end
 
       def call(env)
@@ -140,23 +138,40 @@ module Rack
         end
       end
 
-      def check_exclude_type!
-        unless @exclude.is_a?(Array)
+      # Compile the list of excludes provided by the user. Each regex is left
+      # as is, each string is turned into the regex equivalent of #start_with?
+      def compile_excludes!(array_of_excludes)
+
+        unless array_of_excludes.is_a?(Array)
           raise ArgumentError, 'exclude argument must be an Array'
         end
 
-        @exclude.each do |x|
-          unless x.is_a?(String)
-            raise ArgumentError, 'each exclude Array element must be a String'
-          end
+        @exclude = array_of_excludes.map do |ex|
 
-          if(rgx = Regexp.compile(x) rescue nil).nil?
-            raise ArgumentError, "Could not compile regex: #{x}"
+          logger.debug("compiling exclude '#{ex}'")
+
+          if ex.is_a?(String)
+            if !ex.start_with?('/')
+              raise ArgumentError.new("Cannot use '#{ex}' as an exclude: string excludes must start with '/'")
+            else
+              if(rgx = Regexp.compile(ex) rescue nil).nil?
+                raise ArgumentError.new("Could not compile #{x} to regex")
+              else
+                rgx
+              end
+            end
+          elsif ex.is_a?(Regexp)
+            ex
+          else
+            raise ArgumentError.new("exclude path most be a string or regexp")
           end
+        end
       end
 
       def path_matches_excluded_path?(env)
-        @exclude.any? { |ex| env['PATH_INFO'] =~ /#{ex}/ }
+        @exclude.any? do |ex|
+          env['PATH_INFO'] =~ /#{ex}/
+        end
       end
 
       def valid_auth_header?(env)

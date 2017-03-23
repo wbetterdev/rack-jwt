@@ -6,7 +6,6 @@ module Rack
     # Authentication middleware
     class Auth
       attr_reader :logger
-
       attr_reader :secret
       attr_reader :verify
       attr_reader :options
@@ -148,7 +147,7 @@ module Rack
 
         @exclude = array_of_excludes.map do |ex|
 
-          logger.debug("compiling exclude '#{ex}'")
+          logger.debug("rack-jwt: compiling exclude '#{ex}'")
 
           if ex.is_a?(String)
             if !ex.start_with?('/')

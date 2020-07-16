@@ -50,7 +50,7 @@ describe Rack::JWT::Auth do
     end
 
     describe 'checks for both HTTP method and path' do
-      context 'when the argument is a symbol' do 
+      context 'when the argument is a symbol' do
         let(:app) { Rack::JWT::Auth.new(inner_app, secret: secret, exclude: [['/static', :get]]) }
 
         it 'returns a 200 when method is matches' do
@@ -64,7 +64,7 @@ describe Rack::JWT::Auth do
         end
       end
 
-      context 'when the argument is a pattern' do 
+      context 'when the argument is a pattern' do
         let(:app) { Rack::JWT::Auth.new(inner_app, secret: secret, exclude: [['/static', 'get|put']]) }
 
         it 'returns a 200 when method is matches' do
@@ -81,7 +81,7 @@ describe Rack::JWT::Auth do
         end
       end
 
-      context 'when the argument contains uppercase letters' do 
+      context 'when the argument contains uppercase letters' do
         let(:app) { Rack::JWT::Auth.new(inner_app, secret: secret, exclude: [['/static', 'gEt']]) }
 
         it 'matches http method in case insensitive mode' do
@@ -105,23 +105,21 @@ describe Rack::JWT::Auth do
     describe 'passes through matching exact path' do
       let(:app) { Rack::JWT::Auth.new(inner_app, secret: secret, optional: ['/static']) }
 
-      context 'when path mathes' do
-        it 'returns a 200 if header is missing' do
-          get('/static')
-          expect(last_response.status).to eq 200
-        end
+      it 'returns a 200 if header is missing' do
+        get('/static')
+        expect(last_response.status).to eq 200
+      end
 
-        it 'returns a 401 if the header is bad' do
-          header 'Authorization', "Bearer I'm not that bad of a header. Let me in please."
-          get('/static')
-          expect(last_response.status).to eq 401
-        end
+      it 'returns a 401 if the header is bad' do
+        header 'Authorization', "Bearer I'm not that bad of a header. Let me in please."
+        get('/static')
+        expect(last_response.status).to eq 401
+      end
 
-        it 'returns a 200 if the header is good' do
-          header 'Authorization', "Bearer #{issuer.encode(payload, secret, 'HS256')}"
-          get('/static')
-          expect(last_response.status).to eq 200
-        end
+      it 'returns a 200 if the header is good' do
+        header 'Authorization', "Bearer #{issuer.encode(payload, secret, 'HS256')}"
+        get('/static')
+        expect(last_response.status).to eq 200
       end
     end
 

@@ -161,9 +161,7 @@ module Rack
 
         patterns.map do |arr|
           # insert '.*' pattern for http method if nothing is provided
-          unless arr.is_a?(Array)
-            arr = [ arr, '.*']
-          end
+          arr = [arr, '.*'] unless arr.is_a?(Array)
           [
             compile_path_pattern(arr[0]),
             compile_http_method_pattern(arr[1])

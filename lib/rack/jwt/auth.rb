@@ -159,38 +159,64 @@ module Rack
           raise ArgumentError, 'patterns argument must be an Array'
         end
 
-        patterns.map do |ex|
-          logger.debug("rack-jwt: compiling pattern '#{ex}'")
-
-          if ex.is_a?(String)
-            if !ex.start_with?('/')
-              raise ArgumentError.new("Cannot use '#{ex}' as an pattern: string pattern must start with '/'")
-            else
-              if(rgx = Regexp.compile(ex) rescue nil).nil?
-                raise ArgumentError.new("Could not compile #{x} to regex")
-              else
-                rgx
-              end
-            end
-          elsif ex.is_a?(Regexp)
-            ex
-          else
-            raise ArgumentError.new("pattern must be a string or regexp")
+        patterns.map do |arr|
+          # insert '.*' pattern for http method if nothing is provided
+          unless arr.is_a?(Array)
+            arr = [ arr, '.*']
           end
+          [
+            compile_path_pattern(arr[0]),
+            compile_http_method_pattern(arr[1])
+          ]
+        end
+      end
+
+      def compile_path_pattern(ex)
+        if ex.is_a?(String)
+          if !ex.start_with?('/')
+            raise ArgumentError.new("Cannot use '#{ex}' as an pattern: string pattern must start with '/'")
+          else
+            if(rgx = Regexp.compile(ex) rescue nil).nil?
+              raise ArgumentError.new("Could not compile '#{ex}' to regex")
+            else
+              rgx
+            end
+          end
+        elsif ex.is_a?(Regexp)
+          ex
+        else
+          raise ArgumentError.new("Pattern must be a string or regexp. Received #{ex.class} '#{ex}'")
+        end
+      end
+
+      def compile_http_method_pattern(ex)
+        # Allow symbols besides strings and regexp
+        ex = ex.to_s if ex.is_a?(Symbol)
+
+        if ex.is_a?(String)
+          if(rgx = Regexp.compile(ex, Regexp::IGNORECASE) rescue nil).nil?
+            raise ArgumentError.new("Could not compile '#{ex}' to regex")
+          else
+            rgx
+          end
+        elsif ex.is_a?(Regexp)
+          ex
+        else
+          raise ArgumentError.new("Pattern must be a string or regexp. Received #{ex.class} '#{ex}'")
         end
       end
 
       def path_is_excluded?(env)
-        path_matches_pattern?(env['PATH_INFO'], @exclude)
+        path_matches_pattern?(env['PATH_INFO'], env['REQUEST_METHOD'], @exclude)
       end
 
       def path_is_optional?(env)
-        path_matches_pattern?(env['PATH_INFO'],@optional)
+        path_matches_pattern?(env['PATH_INFO'], env['REQUEST_METHOD'], @optional)
       end
 
-      def path_matches_pattern?(path, patterns)
+      def path_matches_pattern?(path, method, patterns)
         patterns.any? do |pattern|
-          path =~ /#{pattern}/
+          path =~ /#{pattern[0]}/ && method =~ /#{pattern[1]}/
         end
       end
 

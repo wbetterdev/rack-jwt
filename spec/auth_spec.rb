@@ -148,14 +148,14 @@ describe Rack::JWT::Auth do
       describe 'when method specs is an empty array' do
         it 'raises an exception' do
           args = { secret: secret, exclude: {'/fasdasd' => [] } }
-          expect { Rack::JWT::Auth.new(inner_app, args) }.not_to raise_error(ArgumentError)
+          expect { Rack::JWT::Auth.new(inner_app, args) }.to raise_error(ArgumentError)
         end
       end
 
       describe 'when method specs is nil' do
         it 'raises an exception' do
           args = { secret: secret, exclude: {'/fasdasd' => nil } }
-          expect { Rack::JWT::Auth.new(inner_app, args) }.not_to raise_error(ArgumentError)
+          expect { Rack::JWT::Auth.new(inner_app, args) }.to raise_error(ArgumentError)
         end
       end
 

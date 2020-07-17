@@ -80,6 +80,62 @@ describe Rack::JWT::Auth do
         end
       end
 
+      context 'when using shorthand single http verb symbol' do
+        let(:app_args) { { exclude: { '/first' => :get } } } 
+
+        it 'returns a 200 for methods that match' do
+          get('/first')
+          expect(last_response.status).to eq 200
+        end
+
+        it 'returns a 401 for methods that do not match' do
+          delete('/first')
+          expect(last_response.status).to eq 401
+        end
+      end
+
+      context 'when using shorthand single http verb string' do
+        let(:app_args) { { exclude: { '/first' => 'get' } } } 
+
+        it 'returns a 200 for methods that match' do
+          get('/first')
+          expect(last_response.status).to eq 200
+        end
+
+        it 'returns a 401 for methods that do not match' do
+          delete('/first')
+          expect(last_response.status).to eq 401
+        end
+      end
+
+      context 'when using a single http verb symbol instad of an array' do
+        let(:app_args) { { exclude: { '/first' => {:only => :get } } } }
+
+        it 'returns a 200 for methods that match' do
+          get('/first')
+          expect(last_response.status).to eq 200
+        end
+
+        it 'returns a 401 for methods that do not match' do
+          delete('/first')
+          expect(last_response.status).to eq 401
+        end
+      end
+
+      context 'when using a single http verb string instad of an array' do
+        let(:app_args) { { exclude: { '/first' => {:only => 'get' } } } }
+
+        it 'returns a 200 for methods that match' do
+          get('/first')
+          expect(last_response.status).to eq 200
+        end
+
+        it 'returns a 401 for methods that do not match' do
+          delete('/first')
+          expect(last_response.status).to eq 401
+        end
+      end
+
       context 'when using "except" specifier' do
         let(:app_args) do
           {

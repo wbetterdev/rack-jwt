@@ -161,7 +161,8 @@ module Rack
           raise ArgumentError, 'patterns argument must be an Array or Hash'
         end
         patterns.map do |arr|
-          arr = [arr, nil] unless arr.is_a?(Array)
+          # convert shorthand `:exclude => ['/path']` to `:exclude => { '/path' => {} }`
+          arr = [arr, {}] unless arr.is_a?(Array)
           [
             compile_path_pattern(arr[0]),
             compile_http_method_pattern(arr[1])
@@ -186,8 +187,11 @@ module Rack
       end
 
       def compile_http_method_pattern(pattern)
-        # allow nil and empty Array/Hash to disable method verification
-        return nil if ([nil, {}, []].include?(pattern))
+        # allow only empty hash to disable method verification
+        return nil if ([{}].include?(pattern))
+
+        # convert shorthand `'/path' => :get` to `'/path' => { :only => [:get] }`
+        pattern = { only: [pattern] } if ( pattern.is_a?(Symbol) || pattern.is_a?(String) )
 
         if !pattern.is_a?(Hash)
           raise ArgumentError.new("Method spec must be a hash of type {except: [...], only: [...]}. Received #{pattern.class} '#{pattern}'")
@@ -196,6 +200,10 @@ module Rack
         %i[only except].each_with_object({}) do |key, hash|
           next unless pattern.key?(key)
           val = pattern[key]
+
+          # convert shorthand `{ :only => :get }` to `{ :only => [:get] }`
+          val = [val] if ( val.is_a?(Symbol) || val.is_a?(String) )
+
           unless val.is_a?(Array)
             raise ArgumentError.new("Method list must be an array. Received val '#{val}'")
           end

@@ -193,10 +193,10 @@ module Rack
         end
 
         %i[only except].each_with_object({}) do |key, hash|
+          next unless pattern.key?(key)
           val = pattern[key]
-          next if val.nil?
           unless val.is_a?(Array)
-            raise ArgumentError.new("Http method list must be an array. Received val '#{val}'")
+            raise ArgumentError.new("Method list must be an array. Received val '#{val}'")
           end
           hash[key] = val.map { |v| v.to_s.upcase }
         end

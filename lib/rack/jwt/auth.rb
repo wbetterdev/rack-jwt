@@ -155,13 +155,13 @@ module Rack
       # Compile the list of patterns provided by the user. Each regex is left
       # as is, each string is turned into the regex equivalent of #start_with?
       def compile_patterns!(patterns)
-        unless patterns.is_a?(Array)
-          raise ArgumentError, 'patterns argument must be an Array'
+        if patterns.is_a?(Hash)
+          patterns = [*patterns]
+        elsif !patterns.is_a?(Array)
+          raise ArgumentError, 'patterns argument must be an Array or Hash'
         end
-
         patterns.map do |arr|
-          # insert '.*' pattern for http method if nothing is provided
-          arr = [arr, '.*'] unless arr.is_a?(Array)
+          arr = [arr, nil] unless arr.is_a?(Array)
           [
             compile_path_pattern(arr[0]),
             compile_http_method_pattern(arr[1])
@@ -169,38 +169,36 @@ module Rack
         end
       end
 
-      def compile_path_pattern(ex)
-        if ex.is_a?(String)
-          if !ex.start_with?('/')
-            raise ArgumentError.new("Cannot use '#{ex}' as an pattern: string pattern must start with '/'")
-          else
-            if(rgx = Regexp.compile(ex) rescue nil).nil?
-              raise ArgumentError.new("Could not compile '#{ex}' to regex")
-            else
-              rgx
-            end
-          end
-        elsif ex.is_a?(Regexp)
-          ex
-        else
-          raise ArgumentError.new("Pattern must be a string or regexp. Received #{ex.class} '#{ex}'")
+      def compile_path_pattern(pattern)
+        return pattern if pattern.is_a?(Regexp)
+
+        unless pattern.is_a?(String)
+          raise ArgumentError.new("Path pattern must be a string or regexp. Received #{pattern.class} '#{pattern}'")
         end
+        unless pattern.start_with?('/')
+          raise ArgumentError.new("Cannot use '#{pattern}' as a pattern: string pattern must start with '/'")
+        end
+        if (rgx = Regexp.compile(pattern) rescue nil).nil?
+          raise ArgumentError.new("Could not compile '#{pattern}' to regex")
+        end
+
+        rgx
       end
 
-      def compile_http_method_pattern(ex)
-        # Allow symbols besides strings and regexp
-        ex = ex.to_s if ex.is_a?(Symbol)
+      def compile_http_method_pattern(pattern)
+        return nil if pattern.nil?
 
-        if ex.is_a?(String)
-          if(rgx = Regexp.compile(ex, Regexp::IGNORECASE) rescue nil).nil?
-            raise ArgumentError.new("Could not compile '#{ex}' to regex")
-          else
-            rgx
+        if !pattern.is_a?(Hash) || (pattern = pattern.slice(:only, :except)).empty?
+          raise ArgumentError.new("Method spec must be a hash of type {except: [...], only: [...]}. Received #{pattern.class} '#{pattern}'")
+        end
+
+        %i[only except].each_with_object({}) do |key, hash|
+          val = pattern[key]
+          next if val.nil?
+          unless val.is_a?(Array)
+            raise ArgumentError.new("Http method list must be an array. Received val '#{val}'")
           end
-        elsif ex.is_a?(Regexp)
-          ex
-        else
-          raise ArgumentError.new("Pattern must be a string or regexp. Received #{ex.class} '#{ex}'")
+          hash[key] = val.map { |v| v.to_s.upcase }
         end
       end
 
@@ -214,7 +212,13 @@ module Rack
 
       def path_matches_pattern?(path, method, patterns)
         patterns.any? do |pattern|
-          path =~ /#{pattern[0]}/ && method =~ /#{pattern[1]}/
+          next false unless path =~ /#{pattern[0]}/
+          next true if pattern[1].nil?
+
+          only = pattern[1][:only]
+          except = pattern[1][:except]
+          (only.nil? || only.include?(method)) &&
+          (except.nil? || !except.include?(method))
         end
       end
 

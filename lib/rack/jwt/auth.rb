@@ -186,9 +186,10 @@ module Rack
       end
 
       def compile_http_method_pattern(pattern)
-        return nil if pattern.nil?
+        # allow nil and empty Array/Hash to disable method verification
+        return nil if ([nil, {}, []].include?(pattern))
 
-        if !pattern.is_a?(Hash) || (pattern = pattern.slice(:only, :except)).empty?
+        if !pattern.is_a?(Hash)
           raise ArgumentError.new("Method spec must be a hash of type {except: [...], only: [...]}. Received #{pattern.class} '#{pattern}'")
         end
 

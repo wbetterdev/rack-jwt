@@ -145,21 +145,35 @@ describe Rack::JWT::Auth do
         end
       end
 
-      describe 'when a type other than Array provided' do
+      describe 'when method specs is an empty array' do
         it 'raises an exception' do
           args = { secret: secret, exclude: {'/fasdasd' => [] } }
-          expect { Rack::JWT::Auth.new(inner_app, args) }.to raise_error(ArgumentError)
+          expect { Rack::JWT::Auth.new(inner_app, args) }.not_to raise_error(ArgumentError)
         end
       end
 
-      describe 'when a type other than Array provided' do
+      describe 'when method specs is nil' do
+        it 'raises an exception' do
+          args = { secret: secret, exclude: {'/fasdasd' => nil } }
+          expect { Rack::JWT::Auth.new(inner_app, args) }.not_to raise_error(ArgumentError)
+        end
+      end
+
+      describe 'when method specs is an empty object' do
+        it 'raises an exception' do
+          args = { secret: secret, exclude: {'/fasdasd' => {} } }
+          expect { Rack::JWT::Auth.new(inner_app, args) }.not_to raise_error(ArgumentError)
+        end
+      end
+
+      describe 'when method "only" spec is nil' do
         it 'raises an exception' do
           args = { secret: secret, exclude: {'/fasdasd' => {:only => nil} } }
           expect { Rack::JWT::Auth.new(inner_app, args) }.to raise_error(ArgumentError)
         end
       end
 
-      describe 'when a type other than Array provided' do
+      describe 'when method "only" spec is nil' do
         it 'raises an exception' do
           args = { secret: secret, exclude: {'/fasdasd' => {:only => {}} } }
           expect { Rack::JWT::Auth.new(inner_app, args) }.to raise_error(ArgumentError)

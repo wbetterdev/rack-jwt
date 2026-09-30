@@ -29,4 +29,5 @@ Gem::Specification.new do |spec|
   # without it bundler trying to get last rack version, but it needs ruby >= '2.2.2'
   spec.add_runtime_dependency 'rack', RUBY_VERSION <= '2.2.2' ? '~> 1.6' : '>= 1.6.0'
   spec.add_runtime_dependency 'jwt',  '~> 2.10', '>= 2.10.3'
+  spec.add_runtime_dependency 'logger'
 end

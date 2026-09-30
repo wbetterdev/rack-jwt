@@ -3,7 +3,8 @@ module Rack
     VERSION = '1.1.0'.freeze
 
     CHANGE_LOG = <<-LOG
-      '1.1.0': Require jwt >= 2.10.3 (security fix for empty-key HMAC bypass)
+      '1.1.0': Require jwt >= 2.10.3 (security fix for empty-key HMAC bypass); update dev dependencies
+               (bundler >= 2.2.33, rake ~> 13.0) and specs for Ruby 3.4 / OpenSSL 3
       '1.0.0': Update jwt version in gemspec file
       '0.7.0': Added ability to specify http verb per exclude and option paths
       '0.6.1': Clear jwt sub on thread local after request finishes
